@@ -1,0 +1,85 @@
+
+{% if first_time_accessed %}
+
+<script>
+(function(dataLayer){
+
+    var new_customer = ((Number({{customer.orders_count}}) || 0) > 1) ? false : true;
+    var totalSpent = ((Number({{customer.total_spent | times: 0.01 }}) || 0) > 1) ? {{customer.total_spent | times: 0.01}} : 0;
+    var discounts = "{{ order.discounts | map: 'code' | join: ',' | upcase}}";
+    var discountValue = ((Number({{order.total_discounts | times: 0.01 }}) || 0) > 1) ? {{order.total_discounts | times: 0.01}} : 0;
+
+    function strip(text){
+        return text.replace(/\s+/, ' ').replace(/^\s+/, '').replace(/\s+$/, '');
+    }
+
+    function firstof(){
+        for(var i = 0; i < arguments.length; i++){
+            if(arguments[i]) return arguments[i];
+        }
+        return null;
+    }
+
+    var items = [];
+    {% for line_item in line_items %}
+    items.push({
+        'item_id': firstof(strip('{{line_item.sku}}'), strip('{{line_item.product_id}}')),
+        'item_name': strip('{{line_item.product.title}}'),
+        'item_category': strip('{{line_item.product.type}}'),
+        'item_brand': strip('{{line_item.vendor}}'),
+        'item_variant': strip('{{line_item.variant.title}}'),
+        'coupon': '{{ line_item.discounts | map : 'code' | join: ',' | upcase}}',
+        'price': {{line_item.price | times: 0.01}},
+        'quantity': {{line_item.quantity}}
+    });
+    {% endfor %}
+
+    dataLayer.push({
+        'event': 'checkoutComplete',
+        'isNewCustomer': new_customer,
+        'customerLTV': totalSpent,
+        'customerEmail': '{{customer.email}}',
+        'ecommerce': {
+            'transaction_id': '{{order_number}}',
+            'coupon': discounts,
+            'discount': discountValue, 
+            'value': {{subtotal_price | times: 0.01}},
+            'totalValue': {{total_price | times: 0.01}},
+            'currencyCode': '{{currency}}',
+            'tax': {{tax_price | times: 0.01}},
+            'shipping': {{shipping_price | times: 0.01}},
+            'affiliation': strip('Shopify {{shop.name}}'),
+            'items': items
+        }
+    });
+
+    setTimeout(function(){
+        // Clear the ecommerce data for subsequent hits.
+        dataLayer.push({ 'ecommerce': null });
+    }, 3);
+
+}(window.dataLayer = window.dataLayer || []));
+</script>
+
+{% endif %}
+
+
+<script>
+function containsGTMStart(dl){
+    var i = 0;
+    dl.map(function(e){ if('gtm.start' in e) i++; });
+    return !!i;
+}
+(function(w,d,s,l,i){
+    w[l]=w[l]||[];
+    // attempts to prevent GTM from loading twice.
+    if(containsGTMStart(w[l])) return false;
+    w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});
+    var f=d.getElementsByTagName(s)[0],
+        j=d.createElement(s),
+        dl=l!='dataLayer'?'&l='+l:'';
+    j.async=true;
+    j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;
+    f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-XXXXXXX');
+</script>
