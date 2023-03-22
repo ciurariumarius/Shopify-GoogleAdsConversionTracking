@@ -1,4 +1,4 @@
-# Shopify Google Ads Conversion Tracking
+# Shopify | Google Ads Conversion Tracking
 How to add Google Ads Conversion Tracking to Shopify via GTM
 
 How to add the script: 
